@@ -58,3 +58,7 @@ data/pronunciation_index/
 
 # pytest
 .pytest_cache/
+
+# Test outputs
+*.wav
+test_*.py
