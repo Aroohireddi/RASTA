@@ -1,0 +1,60 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+venv/
+.venv/
+env/
+*/venv/
+*/.venv/
+
+# Models — too large for git
+models/tts/*
+models/transliteration/*
+models/tts_adapter/*
+!models/.gitkeep
+
+# Data
+data/raw/
+data/snapshot/
+!data/pronunciation_lexicon/
+!data/pronunciation_lexicon/seed_entries.json
+
+# Evaluation results
+data/eval_results/*
+evaluation/results/*
+!data/eval_results/.gitkeep
+!evaluation/results/.gitkeep
+
+# Environment variables
+.env
+*.env
+
+# Docker
+.docker/
+
+# VS Code
+.vscode/
+
+# Windows
+Thumbs.db
+desktop.ini
+ehthumbs.db
+
+# Logs
+*.log
+logs/
+
+# ChromaDB index
+data/pronunciation_index/
+
+# pytest
+.pytest_cache/
