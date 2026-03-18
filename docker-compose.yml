@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+  ingestor:
+    build: ./services/ingestor
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  nlp-pipeline:
+    build: ./services/nlp-pipeline
+    ports:
+      - "8002:8002"
+    volumes:
+      - ./models/transliteration:/models
+    depends_on:
+      - rag-store
+    restart: unless-stopped
+
+  rag-store:
+    build: ./services/rag-store
+    ports:
+      - "8003:8003"
+    volumes:
+      - ./data/pronunciation_lexicon:/app/data/pronunciation_lexicon
+      - ./data/pronunciation_index:/app/data/pronunciation_index
+    restart: unless-stopped
+
+  tts-server:
+    build: ./services/tts-server
+    ports:
+      - "8004:8004"
+    volumes:
+      - ./models/tts:/app/models/tts
+      - ./models/tts_adapter:/app/models/tts_adapter
+    restart: unless-stopped
+
+  eval-service:
+    build: ./services/eval-service
+    ports:
+      - "8005:8005"
+    volumes:
+      - ./data/eval_results:/app/data/eval_results
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    depends_on:
+      - tts-server
+    restart: unless-stopped
+
+  api-gateway:
+    build: ./services/api-gateway
+    ports:
+      - "8000:8000"
+    environment:
+      - NLP_URL=http://nlp-pipeline:8002
+      - TTS_URL=http://tts-server:8004
+      - RAG_URL=http://rag-store:8003
+      - INGESTOR_URL=http://ingestor:8001
+      - EVAL_URL=http://eval-service:8005
+    depends_on:
+      - nlp-pipeline
+      - tts-server
+      - rag-store
+    restart: unless-stopped
+
+  dashboard:
+    image: nginx:alpine
+    ports:
+      - "3000:80"
+    volumes:
+      - ./frontend:/usr/share/nginx/html
+    restart: unless-stopped

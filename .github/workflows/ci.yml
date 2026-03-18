@@ -1,0 +1,26 @@
+name: CI
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install nlp-pipeline deps
+        run: pip install -r services/nlp-pipeline/requirements.txt
+      - name: Unit tests codemixer
+        run: python -m pytest services/nlp-pipeline/src/tests/test_codemixer.py -v
+      - name: Unit tests transliterator
+        run: python -m pytest services/nlp-pipeline/src/tests/test_transliterator.py -v
+      - name: Install rag-store deps
+        run: pip install -r services/rag-store/requirements.txt
+      - name: Unit tests rag store
+        run: python -m pytest services/rag-store/src/tests/test_store.py -v
+      - name: Lint
+        run: |
+          pip install ruff
+          ruff check services/nlp-pipeline/src/ --ignore E501
+          ruff check services/rag-store/src/ --ignore E501

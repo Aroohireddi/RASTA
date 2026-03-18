@@ -1,0 +1,15 @@
+feedparser==6.0.12
+requests==2.32.5
+beautifulsoup4==4.14.3
+lxml==6.0.2
+fastapi==0.135.1
+uvicorn==0.42.0
+python-dotenv==1.2.2
+
+fastapi==0.135.1
+uvicorn==0.42.0
+requests==2.32.5
+indic-nlp-library==0.91
+spacy==3.7.4
+deep-translator==1.11.4
+python-dotenv==1.2.2
