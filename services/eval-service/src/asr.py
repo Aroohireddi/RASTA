@@ -1,42 +1,40 @@
-import whisper
+from faster_whisper import WhisperModel
 import numpy as np
 import io
 import soundfile as sf
-import os
 
 _whisper_model = None
 
 def load_whisper():
     global _whisper_model
     if _whisper_model is None:
-        print("[asr] Loading Whisper small model...")
-        _whisper_model = whisper.load_model("small")
-        print("[asr] Whisper loaded.")
+        print("[asr] Loading faster-whisper small model...")
+        _whisper_model = WhisperModel("small", device="cpu", compute_type="int8")
+        print("[asr] faster-whisper loaded.")
     return _whisper_model
 
-def wav_bytes_to_numpy(wav_bytes: bytes) -> np.ndarray:
+def wav_bytes_to_numpy(wav_bytes: bytes) -> tuple[np.ndarray, int]:
     buffer = io.BytesIO(wav_bytes)
     audio, sr = sf.read(buffer)
-    if sr != 16000:
-        import scipy.signal as signal
-        samples = int(len(audio) * 16000 / sr)
-        audio = signal.resample(audio, samples)
     if audio.dtype != np.float32:
         audio = audio.astype(np.float32)
-    return audio
+    return audio, sr
 
 def transcribe(wav_bytes: bytes) -> dict:
     model = load_whisper()
     try:
-        audio = wav_bytes_to_numpy(wav_bytes)
-        result = model.transcribe(
-            audio,
+        audio, sr = wav_bytes_to_numpy(wav_bytes)
+        tmp_path = "/tmp/rasta_eval.wav"
+        sf.write(tmp_path, audio, sr)
+        segments, info = model.transcribe(
+            tmp_path,
             language="te",
-            task="transcribe"
+            beam_size=5
         )
+        transcription = " ".join(s.text for s in segments).strip()
         return {
-            "transcription": result["text"].strip(),
-            "language": result.get("language", "te"),
+            "transcription": transcription,
+            "language": info.language,
             "success": True
         }
     except Exception as e:
@@ -44,14 +42,12 @@ def transcribe(wav_bytes: bytes) -> dict:
         return {"transcription": "", "language": "te", "success": False, "error": str(e)}
 
 def compute_cer(reference: str, hypothesis: str) -> float:
-    """Character Error Rate between reference and hypothesis."""
     if not reference:
         return 1.0
     ref_chars = list(reference.replace(" ", ""))
     hyp_chars = list(hypothesis.replace(" ", ""))
     if len(ref_chars) == 0:
         return 0.0 if len(hyp_chars) == 0 else 1.0
-    # Simple edit distance
     d = [[0] * (len(hyp_chars) + 1) for _ in range(len(ref_chars) + 1)]
     for i in range(len(ref_chars) + 1):
         d[i][0] = i
